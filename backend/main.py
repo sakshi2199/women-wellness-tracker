@@ -7,7 +7,8 @@ from passlib.context import CryptContext
 from database import get_db
 from models import User
 from schemas import UserCreate, UserOut
-
+from schemas import UserLogin
+from auth import create_access_token
 
 app = FastAPI()
 
@@ -44,3 +45,12 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
+
+@app.post("/login")
+def login(credentials: UserLogin, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == credentials.email).first()
+    if not user or not pwd_context.verify(credentials.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    token = create_access_token(user.id)
+    return {"access_token": token, "token_type": "bearer"}
