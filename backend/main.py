@@ -8,6 +8,9 @@ from database import get_db
 from models import User
 from schemas import UserCreate, UserOut, UserLogin, UserOut
 from auth import create_access_token, get_current_user
+from models import Cycle
+from schemas import CycleCreate, CycleOut
+from typing import List
 
 app = FastAPI()
 
@@ -57,3 +60,26 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
 @app.get("/me", response_model=UserOut)
 def read_current_user(current_user: User = Depends(get_current_user)):
     return current_user
+
+@app.post("/cycles", response_model=CycleOut)
+def create_cycle(
+    cycle: CycleCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    new_cycle = Cycle(
+        user_id=current_user.id,
+        start_date=cycle.start_date,
+        end_date=cycle.end_date
+    )
+    db.add(new_cycle)
+    db.commit()
+    db.refresh(new_cycle)
+    return new_cycle
+
+@app.get("/cycles", response_model=List[CycleOut])
+def get_cycles(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return db.query(Cycle).filter(Cycle.user_id == current_user.id).all()
