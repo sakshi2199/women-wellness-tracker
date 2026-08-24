@@ -6,9 +6,8 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from database import get_db
 from models import User
-from schemas import UserCreate, UserOut
-from schemas import UserLogin
-from auth import create_access_token
+from schemas import UserCreate, UserOut, UserLogin, UserOut
+from auth import create_access_token, get_current_user
 
 app = FastAPI()
 
@@ -54,3 +53,7 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
 
     token = create_access_token(user.id)
     return {"access_token": token, "token_type": "bearer"}
+
+@app.get("/me", response_model=UserOut)
+def read_current_user(current_user: User = Depends(get_current_user)):
+    return current_user
